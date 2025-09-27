@@ -123,7 +123,8 @@
         #auth-section {
             text-align: center;
             margin-bottom: 20px;
-            width: 100%; /* Ensure it spans the top */
+            padding-top: 20px; /* Add space above the authentication area */
+            width: 100%; /* Ensure it spans the full width below the main content */
         }
         #login-form, #logout-btn {
             display: inline-block;
@@ -142,9 +143,8 @@
             width: 50%;
             min-width: 400px;
         }
-        #edit-section h2 {
-            text-align: center;
-        }
+        
+        /* REMOVED H2 STYLING - HEADING IS REMOVED FROM HTML */
         
         #update-form {
             /* New 2-column grid layout for department inputs */
@@ -152,6 +152,7 @@
             grid-template-columns: 1fr 1fr; /* Two columns of equal width */
             gap: 15px; 
             justify-items: center; /* Center the input blocks within the columns */
+            margin-top: 20px; /* Add space below table title */
         }
         
         #update-form label {
@@ -160,12 +161,12 @@
             font-weight: bold;
         }
         .dept-input-group {
-            margin-bottom: 0; /* Removed margin to tighten vertical spacing */
+            margin-bottom: 0; 
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
             background-color: #f9f9f9;
-            width: 90%; /* Use most of the column width */
+            width: 90%; 
         }
         .dept-input-group h3 {
             margin-top: 0;
@@ -430,17 +431,6 @@
 <body>
     <h1>Planet Engineering Daily Performance Dashboard</h1>
     
-    <div id="auth-section">
-        <div id="login-form">
-            <input type="email" id="email" placeholder="Email" required>
-            <input type="password" id="password" placeholder="Password" required>
-            <button onclick="login()">Login</button>
-            <button onclick="signup()">Sign Up</button>
-        </div>
-        <button id="logout-btn" class="hidden" onclick="logout()">Logout</button>
-        <p id="auth-message" class="error"></p>
-    </div>
-
     <div id="main-content-container">
     
         <table id="dashboard-table">
@@ -493,7 +483,6 @@
         </table>
 
         <div id="edit-section" class="hidden">
-            <h2>Update All Department Values</h2>
             <form id="update-form">
                 
                 <div class="dept-input-group">
@@ -541,5 +530,15 @@
                 </div>
             </form>
         </div>
-    </div> </body>
+    </div> <div id="auth-section">
+        <div id="login-form">
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <button onclick="login()">Login</button>
+            <button onclick="signup()">Sign Up</button>
+        </div>
+        <button id="logout-btn" class="hidden" onclick="logout()">Logout</button>
+        <p id="auth-message" class="error"></p>
+    </div>
+</body>
 </html>
