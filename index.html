@@ -72,6 +72,13 @@
         tr:hover {
             background-color: #f5f5f5;
         }
+        /* Style for the new Total Row */
+        tr.total-row td {
+            font-weight: bold;
+            background-color: #e8e8e8;
+            border-top: 2px solid #333;
+        }
+
         input[type="number"] {
             width: 100px;
             padding: 5px;
@@ -104,12 +111,12 @@
             text-align: center;
         }
         
-        /* --- NEW FLEXBOX STYLES FOR SIDE-BY-SIDE ENTRY --- */
+        /* --- FLEXBOX STYLES FOR SIDE-BY-SIDE ENTRY --- */
         #update-form {
             display: flex;
-            flex-wrap: wrap; /* Allows departments to wrap onto the next line if screen is too narrow */
-            gap: 15px; /* Spacing between the department blocks */
-            justify-content: center; /* Center the blocks horizontally */
+            flex-wrap: wrap; 
+            gap: 15px; 
+            justify-content: center; 
         }
         #update-form label {
             display: inline-block;
@@ -122,8 +129,7 @@
             border: 1px solid #ccc;
             border-radius: 5px;
             background-color: #f9f9f9;
-            /* Flex item settings */
-            flex: 1 1 300px; /* Grow: 1, Shrink: 1, Base Width: 300px. Ensures blocks are large enough and wrap nicely. */
+            flex: 1 1 300px; 
             min-width: 250px;
             max-width: 350px;
         }
@@ -168,6 +174,8 @@
 
         // Departments data structure
         const departments = ['parts', 'workshop', 'radiator', 'rewinding', 'fip'];
+        // Object to hold total data for calculation
+        let allDepartmentData = {}; 
 
         // Helper function to calculate achievement percentage
         function calculateAchievement(sales, target) {
@@ -176,6 +184,27 @@
             }
             return 'N/A';
         }
+
+        // Function to update the totals row
+        function updateTotalsRow() {
+            let totalSales = 0;
+            let totalTarget = 0;
+            
+            // Sum up sales and targets from the collected department data
+            departments.forEach(dept => {
+                const data = allDepartmentData[dept] || { sales: 0, target: 0 };
+                totalSales += data.sales || 0;
+                totalTarget += data.target || 0;
+            });
+
+            const totalAchieved = calculateAchievement(totalSales, totalTarget);
+
+            // Update the HTML elements for the total row
+            document.getElementById('total-sales').textContent = totalSales.toFixed(2);
+            document.getElementById('total-target').textContent = totalTarget.toFixed(2);
+            document.getElementById('total-achieved').textContent = totalAchieved;
+        }
+
 
         // Load data from Firebase
         function loadData() {
@@ -187,8 +216,10 @@
                     document.getElementById(`${dept}-target`).textContent = 0;
                     document.getElementById(`${dept}-achieved`).textContent = 'N/A';
                 });
+                updateTotalsRow(); // Update totals with 0/N/A
                 return;
             }
+
             departments.forEach(dept => {
                 const dataRef = ref(db, `departments/${dept}`);
                 onValue(dataRef, (snapshot) => {
@@ -197,24 +228,37 @@
                     const target = data.target || 0;
                     const achieved = calculateAchievement(sales, target);
 
-                    document.getElementById(`${dept}-sales`).textContent = sales;
-                    document.getElementById(`${dept}-target`).textContent = target;
+                    // Update the global data store
+                    allDepartmentData[dept] = { sales, target };
+
+                    // Update the individual row in the table
+                    document.getElementById(`${dept}-sales`).textContent = sales.toFixed(2);
+                    document.getElementById(`${dept}-target`).textContent = target.toFixed(2);
                     document.getElementById(`${dept}-achieved`).textContent = achieved;
+                    
+                    // Recalculate and update the totals row
+                    updateTotalsRow(); 
+
                 }, (error) => {
                     document.getElementById('auth-message').textContent = `Error loading data for ${dept}: ${error.code} - ${error.message}`;
                     console.error(`Error loading data for ${dept}:`, error);
+                    // Update the global data store with fallback values
+                    allDepartmentData[dept] = { sales: 0, target: 0 };
+                    
                     document.getElementById(`${dept}-sales`).textContent = 0;
                     document.getElementById(`${dept}-target`).textContent = 0;
                     document.getElementById(`${dept}-achieved`).textContent = 'N/A';
+
+                    // Recalculate and update the totals row
+                    updateTotalsRow(); 
                 });
             });
         }
 
-        // Update data in Firebase (MODIFIED FOR MULTI-ENTRY)
+        // Update data in Firebase (UNMODIFIED)
         window.updateData = function() {
             if (!db) {
                 document.getElementById('auth-message').textContent = 'Error: Database not initialized';
-                console.error('Database not initialized');
                 return;
             }
             
@@ -228,10 +272,8 @@
                 const sales = salesInput.value ? parseFloat(salesInput.value) : null;
                 const target = targetInput.value ? parseFloat(targetInput.value) : null;
                 
-                // Only create update object if at least one field has a value
                 if (sales !== null || target !== null) {
                     updates[`departments/${dept}`] = {
-                        // Use new input value if provided, otherwise preserve existing value from the dashboard display
                         sales: sales !== null ? sales : (document.getElementById(`${dept}-sales`).textContent === 'Loading...' ? 0 : parseFloat(document.getElementById(`${dept}-sales`).textContent)),
                         target: target !== null ? target : (document.getElementById(`${dept}-target`).textContent === 'Loading...' ? 0 : parseFloat(document.getElementById(`${dept}-target`).textContent))
                     };
@@ -244,7 +286,6 @@
                  return;
             }
 
-            // Use the update method to apply all changes atomically
             update(ref(db), updates)
                 .then(() => {
                     document.getElementById('auth-message').textContent = 'All department data updated successfully!';
@@ -324,6 +365,7 @@
                 document.getElementById(`${dept}-target`).textContent = 0;
                 document.getElementById(`${dept}-achieved`).textContent = 'N/A';
             });
+            updateTotalsRow();
         }
     </script>
 </head>
@@ -380,6 +422,12 @@
                 <td id="fip-sales">Loading...</td>
                 <td id="fip-target">Loading...</td>
                 <td id="fip-achieved">Loading...</td>
+            </tr>
+            <tr id="totals-row" class="total-row">
+                <td>TOTALS</td>
+                <td id="total-sales">N/A</td>
+                <td id="total-target">N/A</td>
+                <td id="total-achieved">N/A</td>
             </tr>
         </tbody>
     </table>
