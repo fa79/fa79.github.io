@@ -1,0 +1,361 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planet Engineering Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        input[type="number"] {
+            width: 100px;
+            padding: 5px;
+            margin: 5px 0;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #auth-section {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        #login-form, #logout-btn {
+            display: inline-block;
+        }
+        .hidden {
+            display: none;
+        }
+        .error {
+            color: red;
+            text-align: center;
+        }
+    </style>
+    <!-- Firebase SDKs (version 10.12.2) -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+        import { getDatabase, ref, onValue, set } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBhlPHRHKJqa1giyDLgCDThpBaqvUdVN-8",
+            authDomain: "planet-dashboard.firebaseapp.com",
+            databaseURL: "https://planet-dashboard-default-rtdb.firebaseio.com",
+            projectId: "planet-dashboard",
+            storageBucket: "planet-dashboard.firebasestorage.app",
+            messagingSenderId: "855281121241",
+            appId: "1:855281121241:web:3ce4c39dd86014e831cbc8"
+        };
+
+        // Initialize Firebase
+        let app, auth, db;
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getDatabase(app);
+            document.getElementById('auth-message').textContent = 'Firebase initialized successfully';
+        } catch (error) {
+            document.getElementById('auth-message').textContent = `Firebase Initialization Error: ${error.code} - ${error.message}`;
+            console.error('Firebase Initialization Error:', error);
+            // Continue without returning to allow UI to remain functional
+        }
+
+        // Departments data structure
+        const departments = ['parts', 'workshop', 'radiator', 'rewinding', 'fip'];
+
+        // Load data from Firebase
+        function loadData() {
+            if (!db) {
+                document.getElementById('auth-message').textContent = 'Error: Database not initialized';
+                console.error('Database not initialized');
+                // Fallback to default values for all departments
+                departments.forEach(dept => {
+                    document.getElementById(`${dept}-sales`).textContent = 0;
+                    document.getElementById(`${dept}-target`).textContent = 0;
+                    document.getElementById(`${dept}-achieved`).textContent = 0;
+                });
+                return;
+            }
+            departments.forEach(dept => {
+                const dataRef = ref(db, `departments/${dept}`);
+                onValue(dataRef, (snapshot) => {
+                    const data = snapshot.val() || { sales: 0, target: 0, achieved: 0 };
+                    document.getElementById(`${dept}-sales`).textContent = data.sales;
+                    document.getElementById(`${dept}-target`).textContent = data.target;
+                    document.getElementById(`${dept}-achieved`).textContent = data.achieved;
+                }, (error) => {
+                    document.getElementById('auth-message').textContent = `Error loading data for ${dept}: ${error.code} - ${error.message}`;
+                    console.error(`Error loading data for ${dept}:`, error);
+                    // Fallback to default values
+                    document.getElementById(`${dept}-sales`).textContent = 0;
+                    document.getElementById(`${dept}-target`).textContent = 0;
+                    document.getElementById(`${dept}-achieved`).textContent = 0;
+                });
+            });
+        }
+
+        // Update data in Firebase
+        window.updateData = function() {
+            if (!db) {
+                document.getElementById('auth-message').textContent = 'Error: Database not initialized';
+                console.error('Database not initialized');
+                return;
+            }
+            const dept = document.getElementById('department-select').value;
+            const sales = document.getElementById('sales-input').value;
+            const target = document.getElementById('target-input').value;
+            const achieved = document.getElementById('achieved-input').value;
+
+            if (sales && target && achieved) {
+                set(ref(db, `departments/${dept}`), {
+                    sales: parseFloat(sales),
+                    target: parseFloat(target),
+                    achieved: parseFloat(achieved)
+                }).then(() => {
+                    document.getElementById('auth-message').textContent = 'Data updated successfully!';
+                    document.getElementById('update-form').reset();
+                }).catch(error => {
+                    document.getElementById('auth-message').textContent = `Error updating data: ${error.code} - ${error.message}`;
+                    console.error('Error updating data:', error);
+                });
+            } else {
+                document.getElementById('auth-message').textContent = 'Please fill all fields.';
+            }
+        };
+
+        // Authentication functions
+        window.login = function() {
+            if (!auth) {
+                document.getElementById('auth-message').textContent = 'Error: Authentication not initialized';
+                console.error('Authentication not initialized');
+                return;
+            }
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            signInWithEmailAndPassword(auth, email, password)
+                .then(user => {
+                    document.getElementById('auth-message').textContent = 'Logged in successfully!';
+                    toggleAuthUI(true);
+                })
+                .catch(error => {
+                    document.getElementById('auth-message').textContent = `Login Error: ${error.code} - ${error.message}`;
+                    console.error('Login Error:', error);
+                });
+        };
+
+        window.signup = function() {
+            if (!auth) {
+                document.getElementById('auth-message').textContent = 'Error: Authentication not initialized';
+                console.error('Authentication not initialized');
+                return;
+            }
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            createUserWithEmailAndPassword(auth, email, password)
+                .then(user => {
+                    document.getElementById('auth-message').textContent = 'Signed up successfully! You can now log in.';
+                })
+                .catch(error => {
+                    document.getElementById('auth-message').textContent = `Sign-up Error: ${error.code} - ${error.message}`;
+                    console.error('Sign-up Error:', error);
+                });
+        };
+
+        window.logout = function() {
+            if (!auth) {
+                document.getElementById('auth-message').textContent = 'Error: Authentication not initialized';
+                console.error('Authentication not initialized');
+                return;
+            }
+            signOut(auth)
+                .then(() => {
+                    document.getElementById('auth-message').textContent = 'Logged out successfully!';
+                    toggleAuthUI(false);
+                })
+                .catch(error => {
+                    document.getElementById('auth-message').textContent = `Logout Error: ${error.code} - ${error.message}`;
+                    console.error('Logout Error:', error);
+                });
+        };
+
+        // Toggle UI based on auth state
+        function toggleAuthUI(isLoggedIn) {
+            document.getElementById('login-form').classList.toggle('hidden', isLoggedIn);
+            document.getElementById('logout-btn').classList.toggle('hidden', !isLoggedIn);
+            document.getElementById('edit-section').classList.toggle('hidden', !isLoggedIn);
+        }
+
+        // Wait for auth state before loading data
+        if (auth) {
+            onAuthStateChanged(auth, user => {
+                toggleAuthUI(!!user);
+                loadData(); // Load data after auth state is resolved
+            });
+        } else {
+            document.getElementById('auth-message').textContent = 'Error: Authentication not initialized';
+            console.error('Authentication not initialized');
+            // Load fallback data
+            departments.forEach(dept => {
+                document.getElementById(`${dept}-sales`).textContent = 0;
+                document.getElementById(`${dept}-target`).textContent = 0;
+                document.getElementById(`${dept}-achieved`).textContent = 0;
+            });
+        }
+    </script>
+</head>
+<body>
+    <h1>Planet Engineering Daily Performance Dashboard</h1>
+    
+    <div id="auth-section">
+        <div id="login-form">
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <button onclick="login()">Login</button>
+            <button onclick="signup()">Sign Up</button>
+        </div>
+        <button id="logout-btn" class="hidden" onclick="logout()">Logout</button>
+        <p id="auth-message" class="error"></p>
+    </div>
+    
+    <table id="dashboard-table">
+        <thead>
+            <tr>
+                <th>Department</th>
+                <th>Sales to Date</th>
+                <th>Monthly Target</th>
+                <th>Monthly Target Achieved</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr id="parts-row">
+                <td>Parts</td>
+                <td id="parts-sales">Loading...</td>
+                <td id="parts-target">Loading...</td>
+                <td id="parts-achieved">Loading...</td>
+            </tr>
+            <tr id="workshop-row">
+                <td>Workshop</td>
+                <td id="workshop-sales">Loading...</td>
+                <td id="workshop-target">Loading...</td>
+                <td id="workshop-achieved">Loading...</td>
+            </tr>
+            <tr id="radiator-row">
+                <td>Radiator</td>
+                <td id="radiator-sales">Loading...</td>
+                <td id="radiator-target">Loading...</td>
+                <td id="radiator-achieved">Loading...</td>
+            </tr>
+            <tr id="rewinding-row">
+                <td>Rewinding</td>
+                <td id="rewinding-sales">Loading...</td>
+                <td id="rewinding-target">Loading...</td>
+                <td id="rewinding-achieved">Loading...</td>
+            </tr>
+            <tr id="fip-row">
+                <td>FIP</td>
+                <td id="fip-sales">Loading...</td>
+                <td id="fip-target">Loading...</td>
+                <td id="fip-achieved">Loading...</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div id="edit-section" class="hidden">
+        <h2>Update Values (Authorized Users Only)</h2>
+        <form id="update-form">
+            <label>Department:</label>
+            <select id="department-select">
+                <option value="parts">Parts</option>
+                <option value="workshop">Workshop</option>
+                <option value="radiator">Radiator</option>
+                <option value="rewinding">Rewinding</option>
+                <option value="fip">FIP</option>
+            </select><br><br>
+            
+            <label>Sales to Date:</label>
+            <input type="number" id="sales-input" required><br>
+            
+            <label>Monthly Target:</label>
+            <input type="number" id="target-input" required><br>
+            
+            <label>Monthly Target Achieved:</label>
+            <input type="number" id="achieved-input" required><br>
+            
+            <button type="button" onclick="updateData()">Update</button>
+        </form>
+    </div>
+</body>
+</html>
