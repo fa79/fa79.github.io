@@ -59,6 +59,7 @@
             margin: 20px 0;
             background-color: white;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            table-layout: fixed; /* Added to make width control easier */
         }
         th, td {
             padding: 12px;
@@ -79,12 +80,22 @@
             border-top: 2px solid #333;
         }
 
+        /* --- NEW STYLING FOR ALIGNMENT AND WIDTH --- */
+        /* Set specific column widths */
+        #dashboard-table th:nth-child(1), #dashboard-table td:nth-child(1) { width: 40%; } /* Department Name */
+        #dashboard-table th:nth-child(2), #dashboard-table td:nth-child(2) { width: 20%; text-align: right; } /* Sales to Date */
+        #dashboard-table th:nth-child(3), #dashboard-table td:nth-child(3) { width: 20%; text-align: right; } /* Monthly Target */
+        #dashboard-table th:nth-child(4), #dashboard-table td:nth-child(4) { width: 20%; text-align: right; } /* Target Achieved */
+        
+        /* Ensure inputs are right-aligned within their narrow cell space */
         input[type="number"] {
-            width: 100px;
+            width: 80px; /* Reduced width of input fields */
             padding: 5px;
             margin: 5px 0;
             box-sizing: border-box; 
+            text-align: right; /* Right-align input text */
         }
+        
         button {
             padding: 10px 20px;
             background-color: #4CAF50;
@@ -179,8 +190,13 @@
 
         // Helper function to calculate achievement percentage
         function calculateAchievement(sales, target) {
+            // Round sales and target to whole numbers before calculation
+            sales = Math.round(sales);
+            target = Math.round(target);
+
             if (target > 0) {
-                return ((sales / target) * 100).toFixed(2) + '%';
+                // Return achievement rounded to 0 decimal places
+                return ((sales / target) * 100).toFixed(0) + '%';
             }
             return 'N/A';
         }
@@ -199,9 +215,9 @@
 
             const totalAchieved = calculateAchievement(totalSales, totalTarget);
 
-            // Update the HTML elements for the total row
-            document.getElementById('total-sales').textContent = totalSales.toFixed(2);
-            document.getElementById('total-target').textContent = totalTarget.toFixed(2);
+            // Update the HTML elements for the total row, rounding totals to whole numbers
+            document.getElementById('total-sales').textContent = Math.round(totalSales);
+            document.getElementById('total-target').textContent = Math.round(totalTarget);
             document.getElementById('total-achieved').textContent = totalAchieved;
         }
 
@@ -231,9 +247,9 @@
                     // Update the global data store
                     allDepartmentData[dept] = { sales, target };
 
-                    // Update the individual row in the table
-                    document.getElementById(`${dept}-sales`).textContent = sales.toFixed(2);
-                    document.getElementById(`${dept}-target`).textContent = target.toFixed(2);
+                    // Update the individual row in the table, rounding sales/target to whole numbers
+                    document.getElementById(`${dept}-sales`).textContent = Math.round(sales);
+                    document.getElementById(`${dept}-target`).textContent = Math.round(target);
                     document.getElementById(`${dept}-achieved`).textContent = achieved;
                     
                     // Recalculate and update the totals row
@@ -255,7 +271,7 @@
             });
         }
 
-        // Update data in Firebase (UNMODIFIED)
+        // Update data in Firebase (Updated to use Math.round when pulling old values)
         window.updateData = function() {
             if (!db) {
                 document.getElementById('auth-message').textContent = 'Error: Database not initialized';
@@ -274,8 +290,9 @@
                 
                 if (sales !== null || target !== null) {
                     updates[`departments/${dept}`] = {
-                        sales: sales !== null ? sales : (document.getElementById(`${dept}-sales`).textContent === 'Loading...' ? 0 : parseFloat(document.getElementById(`${dept}-sales`).textContent)),
-                        target: target !== null ? target : (document.getElementById(`${dept}-target`).textContent === 'Loading...' ? 0 : parseFloat(document.getElementById(`${dept}-target`).textContent))
+                        // If new value is null, grab existing value from the table and round it before sending to DB
+                        sales: sales !== null ? sales : (document.getElementById(`${dept}-sales`).textContent === 'Loading...' ? 0 : Math.round(parseFloat(document.getElementById(`${dept}-sales`).textContent))),
+                        target: target !== null ? target : (document.getElementById(`${dept}-target`).textContent === 'Loading...' ? 0 : Math.round(parseFloat(document.getElementById(`${dept}-target`).textContent)))
                     };
                     isAnyFieldUpdated = true;
                 }
