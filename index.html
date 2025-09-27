@@ -76,6 +76,7 @@
             width: 100px;
             padding: 5px;
             margin: 5px 0;
+            box-sizing: border-box; /* Ensures padding doesn't increase element width */
         }
         button {
             padding: 10px 20px;
@@ -102,11 +103,29 @@
             color: red;
             text-align: center;
         }
+        /* New styles for the multi-entry form */
+        #update-form label {
+            display: inline-block;
+            width: 120px; /* Align labels */
+            font-weight: bold;
+        }
+        .dept-input-group {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .dept-input-group h3 {
+            margin-top: 0;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
     </style>
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-        import { getDatabase, ref, onValue, set } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+        import { getDatabase, ref, onValue, update } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 
         // Firebase configuration
         const firebaseConfig = {
@@ -129,7 +148,6 @@
         } catch (error) {
             document.getElementById('auth-message').textContent = `Firebase Initialization Error: ${error.code} - ${error.message}`;
             console.error('Firebase Initialization Error:', error);
-            // Continue without returning to allow UI to remain functional
         }
 
         // Departments data structure
@@ -148,11 +166,10 @@
             if (!db) {
                 document.getElementById('auth-message').textContent = 'Error: Database not initialized';
                 console.error('Database not initialized');
-                // Fallback to default values for all departments
                 departments.forEach(dept => {
                     document.getElementById(`${dept}-sales`).textContent = 0;
                     document.getElementById(`${dept}-target`).textContent = 0;
-                    document.getElementById(`${dept}-achieved`).textContent = 'N/A'; // Updated fallback
+                    document.getElementById(`${dept}-achieved`).textContent = 'N/A';
                 });
                 return;
             }
@@ -162,7 +179,7 @@
                     const data = snapshot.val() || { sales: 0, target: 0 };
                     const sales = data.sales || 0;
                     const target = data.target || 0;
-                    const achieved = calculateAchievement(sales, target); // CALCULATED FIELD
+                    const achieved = calculateAchievement(sales, target);
 
                     document.getElementById(`${dept}-sales`).textContent = sales;
                     document.getElementById(`${dept}-target`).textContent = target;
@@ -170,48 +187,61 @@
                 }, (error) => {
                     document.getElementById('auth-message').textContent = `Error loading data for ${dept}: ${error.code} - ${error.message}`;
                     console.error(`Error loading data for ${dept}:`, error);
-                    // Fallback to default values
                     document.getElementById(`${dept}-sales`).textContent = 0;
                     document.getElementById(`${dept}-target`).textContent = 0;
-                    document.getElementById(`${dept}-achieved`).textContent = 'N/A'; // Updated fallback
+                    document.getElementById(`${dept}-achieved`).textContent = 'N/A';
                 });
             });
         }
 
-        // Update data in Firebase
+        // Update data in Firebase (MODIFIED FOR MULTI-ENTRY)
         window.updateData = function() {
             if (!db) {
                 document.getElementById('auth-message').textContent = 'Error: Database not initialized';
                 console.error('Database not initialized');
                 return;
             }
-            const dept = document.getElementById('department-select').value;
-            const sales = document.getElementById('sales-input').value;
-            const target = document.getElementById('target-input').value;
+            
+            const updates = {};
+            let isAnyFieldUpdated = false;
 
-            // Check if both sales and target are filled (achieved is calculated)
-            if (sales && target) {
-                set(ref(db, `departments/${dept}`), {
-                    sales: parseFloat(sales),
-                    target: parseFloat(target),
-                    // ACHIEVED IS NO LONGER STORED
-                }).then(() => {
-                    document.getElementById('auth-message').textContent = 'Data updated successfully!';
+            departments.forEach(dept => {
+                const salesInput = document.getElementById(`${dept}-sales-input`);
+                const targetInput = document.getElementById(`${dept}-target-input`);
+                
+                const sales = salesInput.value ? parseFloat(salesInput.value) : null;
+                const target = targetInput.value ? parseFloat(targetInput.value) : null;
+                
+                // Only create update object if at least one field has a value
+                if (sales !== null || target !== null) {
+                    updates[`departments/${dept}`] = {
+                        sales: sales !== null ? sales : (document.getElementById(`${dept}-sales`).textContent === 'Loading...' ? 0 : parseFloat(document.getElementById(`${dept}-sales`).textContent)),
+                        target: target !== null ? target : (document.getElementById(`${dept}-target`).textContent === 'Loading...' ? 0 : parseFloat(document.getElementById(`${dept}-target`).textContent))
+                    };
+                    isAnyFieldUpdated = true;
+                }
+            });
+
+            if (!isAnyFieldUpdated) {
+                 document.getElementById('auth-message').textContent = 'Please fill out at least one sales or target field to update.';
+                 return;
+            }
+
+            // Use the update method to apply all changes atomically
+            update(ref(db), updates)
+                .then(() => {
+                    document.getElementById('auth-message').textContent = 'All department data updated successfully!';
                     document.getElementById('update-form').reset();
                 }).catch(error => {
                     document.getElementById('auth-message').textContent = `Error updating data: ${error.code} - ${error.message}`;
                     console.error('Error updating data:', error);
                 });
-            } else {
-                document.getElementById('auth-message').textContent = 'Please fill both Sales and Target fields.';
-            }
         };
 
-        // Authentication functions
+        // Authentication functions (UNMODIFIED)
         window.login = function() {
             if (!auth) {
                 document.getElementById('auth-message').textContent = 'Error: Authentication not initialized';
-                console.error('Authentication not initialized');
                 return;
             }
             const email = document.getElementById('email').value;
@@ -223,14 +253,12 @@
                 })
                 .catch(error => {
                     document.getElementById('auth-message').textContent = `Login Error: ${error.code} - ${error.message}`;
-                    console.error('Login Error:', error);
                 });
         };
 
         window.signup = function() {
             if (!auth) {
                 document.getElementById('auth-message').textContent = 'Error: Authentication not initialized';
-                console.error('Authentication not initialized');
                 return;
             }
             const email = document.getElementById('email').value;
@@ -241,14 +269,12 @@
                 })
                 .catch(error => {
                     document.getElementById('auth-message').textContent = `Sign-up Error: ${error.code} - ${error.message}`;
-                    console.error('Sign-up Error:', error);
                 });
         };
 
         window.logout = function() {
             if (!auth) {
                 document.getElementById('auth-message').textContent = 'Error: Authentication not initialized';
-                console.error('Authentication not initialized');
                 return;
             }
             signOut(auth)
@@ -258,27 +284,24 @@
                 })
                 .catch(error => {
                     document.getElementById('auth-message').textContent = `Logout Error: ${error.code} - ${error.message}`;
-                    console.error('Logout Error:', error);
                 });
         };
 
-        // Toggle UI based on auth state
+        // Toggle UI based on auth state (UNMODIFIED)
         function toggleAuthUI(isLoggedIn) {
             document.getElementById('login-form').classList.toggle('hidden', isLoggedIn);
             document.getElementById('logout-btn').classList.toggle('hidden', !isLoggedIn);
             document.getElementById('edit-section').classList.toggle('hidden', !isLoggedIn);
         }
 
-        // Wait for auth state before loading data
+        // Wait for auth state before loading data (UNMODIFIED)
         if (auth) {
             onAuthStateChanged(auth, user => {
                 toggleAuthUI(!!user);
-                loadData(); // Load data after auth state is resolved
+                loadData();
             });
         } else {
             document.getElementById('auth-message').textContent = 'Error: Authentication not initialized';
-            console.error('Authentication not initialized');
-            // Load fallback data
             departments.forEach(dept => {
                 document.getElementById(`${dept}-sales`).textContent = 0;
                 document.getElementById(`${dept}-target`).textContent = 0;
@@ -345,24 +368,50 @@
     </table>
 
     <div id="edit-section" class="hidden">
-        <h2>Update Values (Authorized Users Only)</h2>
+        <h2>Update All Department Values (Authorized Users Only)</h2>
         <form id="update-form">
-            <label>Department:</label>
-            <select id="department-select">
-                <option value="parts">Parts</option>
-                <option value="workshop">Workshop</option>
-                <option value="radiator">Radiator</option>
-                <option value="rewinding">Rewinding</option>
-                <option value="fip">FIP</option>
-            </select><br><br>
             
-            <label>Sales to Date:</label>
-            <input type="number" id="sales-input" required><br>
+            <div class="dept-input-group">
+                <h3>Parts</h3>
+                <label for="parts-sales-input">Sales to Date:</label>
+                <input type="number" id="parts-sales-input" name="parts-sales-input"><br>
+                <label for="parts-target-input">Monthly Target:</label>
+                <input type="number" id="parts-target-input" name="parts-target-input"><br>
+            </div>
+
+            <div class="dept-input-group">
+                <h3>Workshop</h3>
+                <label for="workshop-sales-input">Sales to Date:</label>
+                <input type="number" id="workshop-sales-input" name="workshop-sales-input"><br>
+                <label for="workshop-target-input">Monthly Target:</label>
+                <input type="number" id="workshop-target-input" name="workshop-target-input"><br>
+            </div>
+
+            <div class="dept-input-group">
+                <h3>Radiator</h3>
+                <label for="radiator-sales-input">Sales to Date:</label>
+                <input type="number" id="radiator-sales-input" name="radiator-sales-input"><br>
+                <label for="radiator-target-input">Monthly Target:</label>
+                <input type="number" id="radiator-target-input" name="radiator-target-input"><br>
+            </div>
             
-            <label>Monthly Target:</label>
-            <input type="number" id="target-input" required><br>
-            
-            <button type="button" onclick="updateData()">Update</button>
+            <div class="dept-input-group">
+                <h3>Rewinding</h3>
+                <label for="rewinding-sales-input">Sales to Date:</label>
+                <input type="number" id="rewinding-sales-input" name="rewinding-sales-input"><br>
+                <label for="rewinding-target-input">Monthly Target:</label>
+                <input type="number" id="rewinding-target-input" name="rewinding-target-input"><br>
+            </div>
+
+            <div class="dept-input-group">
+                <h3>FIP</h3>
+                <label for="fip-sales-input">Sales to Date:</label>
+                <input type="number" id="fip-sales-input" name="fip-sales-input"><br>
+                <label for="fip-target-input">Monthly Target:</label>
+                <input type="number" id="fip-target-input" name="fip-target-input"><br>
+            </div>
+
+            <button type="button" onclick="updateData()">Update All Departments</button>
         </form>
     </div>
 </body>
