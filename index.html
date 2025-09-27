@@ -103,7 +103,6 @@
             text-align: center;
         }
     </style>
-    <!-- Firebase SDKs (version 10.12.2) -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
@@ -136,6 +135,14 @@
         // Departments data structure
         const departments = ['parts', 'workshop', 'radiator', 'rewinding', 'fip'];
 
+        // Helper function to calculate achievement percentage
+        function calculateAchievement(sales, target) {
+            if (target > 0) {
+                return ((sales / target) * 100).toFixed(2) + '%';
+            }
+            return 'N/A';
+        }
+
         // Load data from Firebase
         function loadData() {
             if (!db) {
@@ -145,24 +152,28 @@
                 departments.forEach(dept => {
                     document.getElementById(`${dept}-sales`).textContent = 0;
                     document.getElementById(`${dept}-target`).textContent = 0;
-                    document.getElementById(`${dept}-achieved`).textContent = 0;
+                    document.getElementById(`${dept}-achieved`).textContent = 'N/A'; // Updated fallback
                 });
                 return;
             }
             departments.forEach(dept => {
                 const dataRef = ref(db, `departments/${dept}`);
                 onValue(dataRef, (snapshot) => {
-                    const data = snapshot.val() || { sales: 0, target: 0, achieved: 0 };
-                    document.getElementById(`${dept}-sales`).textContent = data.sales;
-                    document.getElementById(`${dept}-target`).textContent = data.target;
-                    document.getElementById(`${dept}-achieved`).textContent = data.achieved;
+                    const data = snapshot.val() || { sales: 0, target: 0 };
+                    const sales = data.sales || 0;
+                    const target = data.target || 0;
+                    const achieved = calculateAchievement(sales, target); // CALCULATED FIELD
+
+                    document.getElementById(`${dept}-sales`).textContent = sales;
+                    document.getElementById(`${dept}-target`).textContent = target;
+                    document.getElementById(`${dept}-achieved`).textContent = achieved;
                 }, (error) => {
                     document.getElementById('auth-message').textContent = `Error loading data for ${dept}: ${error.code} - ${error.message}`;
                     console.error(`Error loading data for ${dept}:`, error);
                     // Fallback to default values
                     document.getElementById(`${dept}-sales`).textContent = 0;
                     document.getElementById(`${dept}-target`).textContent = 0;
-                    document.getElementById(`${dept}-achieved`).textContent = 0;
+                    document.getElementById(`${dept}-achieved`).textContent = 'N/A'; // Updated fallback
                 });
             });
         }
@@ -177,13 +188,13 @@
             const dept = document.getElementById('department-select').value;
             const sales = document.getElementById('sales-input').value;
             const target = document.getElementById('target-input').value;
-            const achieved = document.getElementById('achieved-input').value;
 
-            if (sales && target && achieved) {
+            // Check if both sales and target are filled (achieved is calculated)
+            if (sales && target) {
                 set(ref(db, `departments/${dept}`), {
                     sales: parseFloat(sales),
                     target: parseFloat(target),
-                    achieved: parseFloat(achieved)
+                    // ACHIEVED IS NO LONGER STORED
                 }).then(() => {
                     document.getElementById('auth-message').textContent = 'Data updated successfully!';
                     document.getElementById('update-form').reset();
@@ -192,7 +203,7 @@
                     console.error('Error updating data:', error);
                 });
             } else {
-                document.getElementById('auth-message').textContent = 'Please fill all fields.';
+                document.getElementById('auth-message').textContent = 'Please fill both Sales and Target fields.';
             }
         };
 
@@ -271,7 +282,7 @@
             departments.forEach(dept => {
                 document.getElementById(`${dept}-sales`).textContent = 0;
                 document.getElementById(`${dept}-target`).textContent = 0;
-                document.getElementById(`${dept}-achieved`).textContent = 0;
+                document.getElementById(`${dept}-achieved`).textContent = 'N/A';
             });
         }
     </script>
@@ -350,9 +361,6 @@
             
             <label>Monthly Target:</label>
             <input type="number" id="target-input" required><br>
-            
-            <label>Monthly Target Achieved:</label>
-            <input type="number" id="achieved-input" required><br>
             
             <button type="button" onclick="updateData()">Update</button>
         </form>
