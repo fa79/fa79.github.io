@@ -76,7 +76,7 @@
             width: 100px;
             padding: 5px;
             margin: 5px 0;
-            box-sizing: border-box; /* Ensures padding doesn't increase element width */
+            box-sizing: border-box; 
         }
         button {
             padding: 10px 20px;
@@ -103,10 +103,17 @@
             color: red;
             text-align: center;
         }
-        /* New styles for the multi-entry form */
+        
+        /* --- NEW FLEXBOX STYLES FOR SIDE-BY-SIDE ENTRY --- */
+        #update-form {
+            display: flex;
+            flex-wrap: wrap; /* Allows departments to wrap onto the next line if screen is too narrow */
+            gap: 15px; /* Spacing between the department blocks */
+            justify-content: center; /* Center the blocks horizontally */
+        }
         #update-form label {
             display: inline-block;
-            width: 120px; /* Align labels */
+            width: 120px;
             font-weight: bold;
         }
         .dept-input-group {
@@ -115,11 +122,20 @@
             border: 1px solid #ccc;
             border-radius: 5px;
             background-color: #f9f9f9;
+            /* Flex item settings */
+            flex: 1 1 300px; /* Grow: 1, Shrink: 1, Base Width: 300px. Ensures blocks are large enough and wrap nicely. */
+            min-width: 250px;
+            max-width: 350px;
         }
         .dept-input-group h3 {
             margin-top: 0;
             border-bottom: 1px solid #ddd;
             padding-bottom: 5px;
+        }
+        #update-button-container {
+            width: 100%;
+            text-align: center;
+            margin-top: 20px;
         }
     </style>
     <script type="module">
@@ -215,6 +231,7 @@
                 // Only create update object if at least one field has a value
                 if (sales !== null || target !== null) {
                     updates[`departments/${dept}`] = {
+                        // Use new input value if provided, otherwise preserve existing value from the dashboard display
                         sales: sales !== null ? sales : (document.getElementById(`${dept}-sales`).textContent === 'Loading...' ? 0 : parseFloat(document.getElementById(`${dept}-sales`).textContent)),
                         target: target !== null ? target : (document.getElementById(`${dept}-target`).textContent === 'Loading...' ? 0 : parseFloat(document.getElementById(`${dept}-target`).textContent))
                     };
@@ -410,8 +427,10 @@
                 <label for="fip-target-input">Monthly Target:</label>
                 <input type="number" id="fip-target-input" name="fip-target-input"><br>
             </div>
-
-            <button type="button" onclick="updateData()">Update All Departments</button>
+            
+            <div id="update-button-container">
+                <button type="button" onclick="updateData()">Update All Departments</button>
+            </div>
         </form>
     </div>
 </body>
