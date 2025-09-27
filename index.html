@@ -43,6 +43,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Planet Engineering Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -58,18 +59,24 @@
         #main-content-container {
             display: flex;
             justify-content: space-around;
-            align-items: flex-start; /* Aligns items to the top */
+            align-items: flex-start;
             gap: 20px;
-            max-width: 1300px; /* Limit overall width */
-            margin: 0 auto; /* Center the container */
+            max-width: 1300px;
+            margin: 0 auto;
         }
         
-        /* --- DASHBOARD TABLE STYLES --- */
-        #dashboard-table {
+        /* --- DASHBOARD TABLE CONTAINER (NEW) --- */
+        #dashboard-container {
+            /* Now holds the table and the chart */
             width: 50%; 
             min-width: 550px; 
+        }
+
+        /* --- DASHBOARD TABLE STYLES --- */
+        #dashboard-table {
+            width: 100%; /* Take full width of its container */
             border-collapse: collapse;
-            margin: 0; 
+            margin: 0 0 20px 0; /* Add margin below table for chart */
             background-color: white;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
             table-layout: fixed;
@@ -94,10 +101,10 @@
         }
 
         /* Set specific column widths for DASHBOARD TABLE */
-        #dashboard-table th:nth-child(1), #dashboard-table td:nth-child(1) { width: 40%; } /* Department Name */
-        #dashboard-table th:nth-child(2), #dashboard-table td:nth-child(2) { width: 20%; text-align: right; } /* Sales to Date */
-        #dashboard-table th:nth-child(3), #dashboard-table td:nth-child(3) { width: 20%; text-align: right; } /* Monthly Target */
-        #dashboard-table th:nth-child(4), #dashboard-table td:nth-child(4) { width: 20%; text-align: right; } /* Target Achieved */
+        #dashboard-table th:nth-child(1), #dashboard-table td:nth-child(1) { width: 40%; }
+        #dashboard-table th:nth-child(2), #dashboard-table td:nth-child(2) { width: 20%; text-align: right; }
+        #dashboard-table th:nth-child(3), #dashboard-table td:nth-child(3) { width: 20%; text-align: right; }
+        #dashboard-table th:nth-child(4), #dashboard-table td:nth-child(4) { width: 20%; text-align: right; }
         
         /* --- GENERAL INPUT AND BUTTON STYLES --- */
         input[type="number"] {
@@ -138,26 +145,27 @@
         
         /* --- EDIT SECTION CONTAINER & FORM STYLES --- */
         #edit-section {
-            width: 50%;
+            width: 50%; /* Left side */
             min-width: 400px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            background-color: white;
+            padding: 15px;
         }
         
-        /* --- NEW DATA ENTRY TABLE STYLES --- */
+        /* --- DATA ENTRY TABLE STYLES (NO CHANGE) --- */
         #update-form-table {
             width: 100%;
             border-collapse: collapse;
             margin: 0;
             background-color: white;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
         #update-form-table th {
-            background-color: #3f9042; /* Slightly different color for data entry table */
+            background-color: #3f9042;
         }
         #update-form-table th, #update-form-table td {
             padding: 8px;
             border: 1px solid #ccc;
         }
-        /* Right-align cells containing inputs */
         #update-form-table td:nth-child(2), #update-form-table td:nth-child(3) {
             text-align: right;
         }
@@ -168,14 +176,26 @@
             margin-top: 20px;
         }
 
+        /* --- CHART STYLES --- */
+        #sales-chart-container {
+            width: 100%;
+            max-width: 550px; /* Constrain chart size within the container */
+            margin: 20px auto;
+            background-color: white;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
         /* --- Responsive Breakpoint --- */
         @media (max-width: 1100px) {
             #main-content-container {
                 flex-direction: column;
                 align-items: center;
             }
-            #dashboard-table {
+            #dashboard-container {
                 width: 95%; 
+            }
+            #dashboard-table {
                 margin-bottom: 20px;
             }
             #edit-section {
@@ -213,17 +233,18 @@
 
         // Departments data structure
         const departments = ['parts', 'workshop', 'radiator', 'rewinding', 'fip'];
-        // Object to hold total data for calculation
+        let departmentLabels = ['Parts', 'Workshop', 'Radiator', 'Rewinding', 'FIP']; // For chart labels
+
+        // Object to hold total data for calculation and chart
         let allDepartmentData = {}; 
+        let salesPieChart = null; // Variable to hold the Chart.js instance
 
         // Helper function to calculate achievement percentage
         function calculateAchievement(sales, target) {
-            // Round sales and target to whole numbers before calculation
             sales = Math.round(sales);
             target = Math.round(target);
 
             if (target > 0) {
-                // Return achievement rounded to 0 decimal places
                 return ((sales / target) * 100).toFixed(0) + '%';
             }
             return 'N/A';
@@ -234,7 +255,6 @@
             let totalSales = 0;
             let totalTarget = 0;
             
-            // Sum up sales and targets from the collected department data
             departments.forEach(dept => {
                 const data = allDepartmentData[dept] || { sales: 0, target: 0 };
                 totalSales += data.sales || 0;
@@ -243,31 +263,89 @@
 
             const totalAchieved = calculateAchievement(totalSales, totalTarget);
 
-            // Update the HTML elements for the total row, rounding totals to whole numbers
             document.getElementById('total-sales').textContent = Math.round(totalSales);
             document.getElementById('total-target').textContent = Math.round(totalTarget);
             document.getElementById('total-achieved').textContent = totalAchieved;
         }
+
+        // --- NEW CHART FUNCTION ---
+        function renderPieChart() {
+            const salesData = departments.map(dept => Math.round(allDepartmentData[dept]?.sales || 0));
+            const ctx = document.getElementById('salesPieChart').getContext('2d');
+
+            const backgroundColors = [
+                'rgba(255, 99, 132, 0.8)', // Parts (Red)
+                'rgba(54, 162, 235, 0.8)', // Workshop (Blue)
+                'rgba(255, 206, 86, 0.8)', // Radiator (Yellow)
+                'rgba(75, 192, 192, 0.8)', // Rewinding (Green)
+                'rgba(153, 102, 255, 0.8)' // FIP (Purple)
+            ];
+            
+            const borderColors = [
+                'rgba(255, 99, 132, 1)',
+                'rgba(54, 162, 235, 1)',
+                'rgba(255, 206, 86, 1)',
+                'rgba(75, 192, 192, 1)',
+                'rgba(153, 102, 255, 1)'
+            ];
+
+            const chartData = {
+                labels: departmentLabels,
+                datasets: [{
+                    data: salesData,
+                    backgroundColor: backgroundColors,
+                    borderColor: borderColors,
+                    borderWidth: 1
+                }]
+            };
+
+            if (salesPieChart) {
+                salesPieChart.data = chartData;
+                salesPieChart.update();
+            } else {
+                salesPieChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: chartData,
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                            title: {
+                                display: true,
+                                text: 'Sales Contribution by Department'
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        // --- END CHART FUNCTION ---
 
 
         // Load data from Firebase
         function loadData() {
             if (!db) {
                 document.getElementById('auth-message').textContent = 'Error: Database not initialized';
-                console.error('Database not initialized');
                 departments.forEach(dept => {
                     document.getElementById(`${dept}-sales`).textContent = 0;
                     document.getElementById(`${dept}-target`).textContent = 0;
                     document.getElementById(`${dept}-achieved`).textContent = 'N/A';
                 });
-                updateTotalsRow(); // Update totals with 0/N/A
+                updateTotalsRow(); 
+                renderPieChart(); // Still call chart function with zero data
                 return;
             }
 
-            departments.forEach(dept => {
-                const dataRef = ref(db, `departments/${dept}`);
-                onValue(dataRef, (snapshot) => {
-                    const data = snapshot.val() || { sales: 0, target: 0 };
+            // Using onValue on the root 'departments' node for efficient total data retrieval
+            const rootRef = ref(db, 'departments');
+            onValue(rootRef, (snapshot) => {
+                const departmentsData = snapshot.val() || {};
+                
+                // Reset/update allDepartmentData and table rows
+                departments.forEach(dept => {
+                    const data = departmentsData[dept] || { sales: 0, target: 0 };
                     const sales = data.sales || 0;
                     const target = data.target || 0;
                     const achieved = calculateAchievement(sales, target);
@@ -279,27 +357,30 @@
                     document.getElementById(`${dept}-sales`).textContent = Math.round(sales);
                     document.getElementById(`${dept}-target`).textContent = Math.round(target);
                     document.getElementById(`${dept}-achieved`).textContent = achieved;
-                    
-                    // Recalculate and update the totals row
-                    updateTotalsRow(); 
+                });
+                
+                // Recalculate and update the totals row and chart once all data is processed
+                updateTotalsRow();
+                renderPieChart();
 
-                }, (error) => {
-                    document.getElementById('auth-message').textContent = `Error loading data for ${dept}: ${error.code} - ${error.message}`;
-                    console.error(`Error loading data for ${dept}:`, error);
-                    // Update the global data store with fallback values
+            }, (error) => {
+                document.getElementById('auth-message').textContent = `Error loading data: ${error.code} - ${error.message}`;
+                console.error(`Error loading data:`, error);
+                
+                // Set fallbacks for all and update totals/chart
+                departments.forEach(dept => {
                     allDepartmentData[dept] = { sales: 0, target: 0 };
-                    
                     document.getElementById(`${dept}-sales`).textContent = 0;
                     document.getElementById(`${dept}-target`).textContent = 0;
                     document.getElementById(`${dept}-achieved`).textContent = 'N/A';
-
-                    // Recalculate and update the totals row
-                    updateTotalsRow(); 
                 });
+                updateTotalsRow();
+                renderPieChart();
             });
         }
 
-        // Update data in Firebase (Updated to use Math.round when pulling old values)
+
+        // Update data in Firebase (UNMODIFIED)
         window.updateData = function() {
             if (!db) {
                 document.getElementById('auth-message').textContent = 'Error: Database not initialized';
@@ -318,7 +399,6 @@
                 
                 if (sales !== null || target !== null) {
                     updates[`departments/${dept}`] = {
-                        // If new value is null, grab existing value from the table and round it before sending to DB
                         sales: sales !== null ? sales : (document.getElementById(`${dept}-sales`).textContent === 'Loading...' ? 0 : Math.round(parseFloat(document.getElementById(`${dept}-sales`).textContent))),
                         target: target !== null ? target : (document.getElementById(`${dept}-target`).textContent === 'Loading...' ? 0 : Math.round(parseFloat(document.getElementById(`${dept}-target`).textContent)))
                     };
@@ -411,6 +491,7 @@
                 document.getElementById(`${dept}-achieved`).textContent = 'N/A';
             });
             updateTotalsRow();
+            renderPieChart();
         }
     </script>
 </head>
@@ -419,55 +500,6 @@
     
     <div id="main-content-container">
     
-        <table id="dashboard-table">
-            <thead>
-                <tr>
-                    <th>Department</th>
-                    <th>Sales to Date</th>
-                    <th>Monthly Target</th>
-                    <th>Monthly Target Achieved</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr id="parts-row">
-                    <td>Parts</td>
-                    <td id="parts-sales">Loading...</td>
-                    <td id="parts-target">Loading...</td>
-                    <td id="parts-achieved">Loading...</td>
-                </tr>
-                <tr id="workshop-row">
-                    <td>Workshop</td>
-                    <td id="workshop-sales">Loading...</td>
-                    <td id="workshop-target">Loading...</td>
-                    <td id="workshop-achieved">Loading...</td>
-                </tr>
-                <tr id="radiator-row">
-                    <td>Radiator</td>
-                    <td id="radiator-sales">Loading...</td>
-                    <td id="radiator-target">Loading...</td>
-                    <td id="radiator-achieved">Loading...</td>
-                </tr>
-                <tr id="rewinding-row">
-                    <td>Rewinding</td>
-                    <td id="rewinding-sales">Loading...</td>
-                    <td id="rewinding-target">Loading...</td>
-                    <td id="rewinding-achieved">Loading...</td>
-                </tr>
-                <tr id="fip-row">
-                    <td>FIP</td>
-                    <td id="fip-sales">Loading...</td>
-                    <td id="fip-target">Loading...</td>
-                    <td id="fip-achieved">Loading...</td>
-                </tr>
-                <tr id="totals-row" class="total-row">
-                    <td>TOTALS</td>
-                    <td id="total-sales">N/A</td>
-                    <td id="total-target">N/A</td>
-                    <td id="total-achieved">N/A</td>
-                </tr>
-            </tbody>
-        </table>
-
         <div id="edit-section" class="hidden">
             <form id="update-form">
                 <table id="update-form-table">
@@ -511,6 +543,61 @@
                     <button type="button" onclick="updateData()">Update All Departments</button>
                 </div>
             </form>
+        </div>
+
+        <div id="dashboard-container">
+            <table id="dashboard-table">
+                <thead>
+                    <tr>
+                        <th>Department</th>
+                        <th>Sales to Date</th>
+                        <th>Monthly Target</th>
+                        <th>Monthly Target Achieved</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr id="parts-row">
+                        <td>Parts</td>
+                        <td id="parts-sales">Loading...</td>
+                        <td id="parts-target">Loading...</td>
+                        <td id="parts-achieved">Loading...</td>
+                    </tr>
+                    <tr id="workshop-row">
+                        <td>Workshop</td>
+                        <td id="workshop-sales">Loading...</td>
+                        <td id="workshop-target">Loading...</td>
+                        <td id="workshop-achieved">Loading...</td>
+                    </tr>
+                    <tr id="radiator-row">
+                        <td>Radiator</td>
+                        <td id="radiator-sales">Loading...</td>
+                        <td id="radiator-target">Loading...</td>
+                        <td id="radiator-achieved">Loading...</td>
+                    </tr>
+                    <tr id="rewinding-row">
+                        <td>Rewinding</td>
+                        <td id="rewinding-sales">Loading...</td>
+                        <td id="rewinding-target">Loading...</td>
+                        <td id="rewinding-achieved">Loading...</td>
+                    </tr>
+                    <tr id="fip-row">
+                        <td>FIP</td>
+                        <td id="fip-sales">Loading...</td>
+                        <td id="fip-target">Loading...</td>
+                        <td id="fip-achieved">Loading...</td>
+                    </tr>
+                    <tr id="totals-row" class="total-row">
+                        <td>TOTALS</td>
+                        <td id="total-sales">N/A</td>
+                        <td id="total-target">N/A</td>
+                        <td id="total-achieved">N/A</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div id="sales-chart-container">
+                <canvas id="salesPieChart"></canvas>
+            </div>
         </div>
     </div> <div id="auth-section">
         <div id="login-form">
