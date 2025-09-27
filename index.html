@@ -64,12 +64,12 @@
             margin: 0 auto; /* Center the container */
         }
         
-        table {
-            /* Reduced table width to make space for the form */
+        /* --- DASHBOARD TABLE STYLES --- */
+        #dashboard-table {
             width: 50%; 
-            min-width: 550px; /* Ensure table is still readable */
+            min-width: 550px; 
             border-collapse: collapse;
-            margin: 0; /* Removed margin to fit layout */
+            margin: 0; 
             background-color: white;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
             table-layout: fixed;
@@ -93,14 +93,13 @@
             border-top: 2px solid #333;
         }
 
-        /* --- STYLING FOR ALIGNMENT AND WIDTH (UNCHANGED) --- */
-        /* Set specific column widths */
+        /* Set specific column widths for DASHBOARD TABLE */
         #dashboard-table th:nth-child(1), #dashboard-table td:nth-child(1) { width: 40%; } /* Department Name */
         #dashboard-table th:nth-child(2), #dashboard-table td:nth-child(2) { width: 20%; text-align: right; } /* Sales to Date */
         #dashboard-table th:nth-child(3), #dashboard-table td:nth-child(3) { width: 20%; text-align: right; } /* Monthly Target */
         #dashboard-table th:nth-child(4), #dashboard-table td:nth-child(4) { width: 20%; text-align: right; } /* Target Achieved */
         
-        /* Ensure inputs are right-aligned within their narrow cell space */
+        /* --- GENERAL INPUT AND BUTTON STYLES --- */
         input[type="number"] {
             width: 80px; 
             padding: 5px;
@@ -123,8 +122,8 @@
         #auth-section {
             text-align: center;
             margin-bottom: 20px;
-            padding-top: 20px; /* Add space above the authentication area */
-            width: 100%; /* Ensure it spans the full width below the main content */
+            padding-top: 20px;
+            width: 100%;
         }
         #login-form, #logout-btn {
             display: inline-block;
@@ -139,54 +138,43 @@
         
         /* --- EDIT SECTION CONTAINER & FORM STYLES --- */
         #edit-section {
-            /* Set form container width to be side-by-side with the table */
             width: 50%;
             min-width: 400px;
         }
         
-        #update-form {
-            /* New 2-column grid layout for department inputs */
-            display: grid;
-            grid-template-columns: 1fr 1fr; /* Two columns of equal width */
-            gap: 15px; 
-            justify-items: center; /* Center the input blocks within the columns */
-            margin-top: 0; /* Remove top margin */
+        /* --- NEW DATA ENTRY TABLE STYLES --- */
+        #update-form-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        #update-form-table th {
+            background-color: #3f9042; /* Slightly different color for data entry table */
+        }
+        #update-form-table th, #update-form-table td {
+            padding: 8px;
+            border: 1px solid #ccc;
+        }
+        /* Right-align cells containing inputs */
+        #update-form-table td:nth-child(2), #update-form-table td:nth-child(3) {
+            text-align: right;
         }
         
-        #update-form label {
-            display: inline-block;
-            width: 120px;
-            font-weight: bold;
-        }
-        .dept-input-group {
-            margin-bottom: 0; 
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            background-color: #f9f9f9;
-            width: 90%; 
-        }
-        .dept-input-group h3 {
-            margin-top: 0;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 5px;
-            font-size: 1.1em;
-        }
         #update-button-container {
-            /* Make the button span both columns */
-            grid-column: 1 / span 2; 
             width: 100%;
             text-align: center;
-            margin-top: 5px;
+            margin-top: 20px;
         }
 
         /* --- Responsive Breakpoint --- */
         @media (max-width: 1100px) {
             #main-content-container {
-                flex-direction: column; /* Stack the table and form vertically */
+                flex-direction: column;
                 align-items: center;
             }
-            table {
+            #dashboard-table {
                 width: 95%; 
                 margin-bottom: 20px;
             }
@@ -482,46 +470,42 @@
 
         <div id="edit-section" class="hidden">
             <form id="update-form">
-                
-                <div class="dept-input-group">
-                    <h3>Parts</h3>
-                    <label for="parts-sales-input">Sales to Date:</label>
-                    <input type="number" id="parts-sales-input" name="parts-sales-input"><br>
-                    <label for="parts-target-input">Monthly Target:</label>
-                    <input type="number" id="parts-target-input" name="parts-target-input"><br>
-                </div>
-
-                <div class="dept-input-group">
-                    <h3>Workshop</h3>
-                    <label for="workshop-sales-input">Sales to Date:</label>
-                    <input type="number" id="workshop-sales-input" name="workshop-sales-input"><br>
-                    <label for="workshop-target-input">Monthly Target:</label>
-                    <input type="number" id="workshop-target-input" name="workshop-target-input"><br>
-                </div>
-
-                <div class="dept-input-group">
-                    <h3>Radiator</h3>
-                    <label for="radiator-sales-input">Sales to Date:</label>
-                    <input type="number" id="radiator-sales-input" name="radiator-sales-input"><br>
-                    <label for="radiator-target-input">Monthly Target:</label>
-                    <input type="number" id="radiator-target-input" name="radiator-target-input"><br>
-                </div>
-                
-                <div class="dept-input-group">
-                    <h3>Rewinding</h3>
-                    <label for="rewinding-sales-input">Sales to Date:</label>
-                    <input type="number" id="rewinding-sales-input" name="rewinding-sales-input"><br>
-                    <label for="rewinding-target-input">Monthly Target:</label>
-                    <input type="number" id="rewinding-target-input" name="rewinding-target-input"><br>
-                </div>
-
-                <div class="dept-input-group">
-                    <h3>FIP</h3>
-                    <label for="fip-sales-input">Sales to Date:</label>
-                    <input type="number" id="fip-sales-input" name="fip-sales-input"><br>
-                    <label for="fip-target-input">Monthly Target:</label>
-                    <input type="number" id="fip-target-input" name="fip-target-input"><br>
-                </div>
+                <table id="update-form-table">
+                    <thead>
+                        <tr>
+                            <th>Department</th>
+                            <th>Sales to Date</th>
+                            <th>Monthly Target</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Parts</td>
+                            <td><input type="number" id="parts-sales-input" name="parts-sales-input"></td>
+                            <td><input type="number" id="parts-target-input" name="parts-target-input"></td>
+                        </tr>
+                        <tr>
+                            <td>Workshop</td>
+                            <td><input type="number" id="workshop-sales-input" name="workshop-sales-input"></td>
+                            <td><input type="number" id="workshop-target-input" name="workshop-target-input"></td>
+                        </tr>
+                        <tr>
+                            <td>Radiator</td>
+                            <td><input type="number" id="radiator-sales-input" name="radiator-sales-input"></td>
+                            <td><input type="number" id="radiator-target-input" name="radiator-target-input"></td>
+                        </tr>
+                        <tr>
+                            <td>Rewinding</td>
+                            <td><input type="number" id="rewinding-sales-input" name="rewinding-sales-input"></td>
+                            <td><input type="number" id="rewinding-target-input" name="rewinding-target-input"></td>
+                        </tr>
+                        <tr>
+                            <td>FIP</td>
+                            <td><input type="number" id="fip-sales-input" name="fip-sales-input"></td>
+                            <td><input type="number" id="fip-target-input" name="fip-target-input"></td>
+                        </tr>
+                    </tbody>
+                </table>
                 
                 <div id="update-button-container">
                     <button type="button" onclick="updateData()">Update All Departments</button>
