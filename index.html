@@ -55,34 +55,34 @@
             color: #333;
         }
 
-        /* --- GLOBAL FLEX CONTAINER (Triple Column) --- */
+        /* --- NEW GLOBAL FLEX CONTAINER --- */
         #main-content-container {
             display: flex;
-            justify-content: center; /* Center items overall */
+            justify-content: space-around;
             align-items: flex-start;
-            gap: 15px; /* Reduced gap for space */
+            gap: 20px;
             max-width: 1300px;
             margin: 0 auto;
         }
         
-        /* --- DASHBOARD CONTAINER (Nested Flex: Table + Chart) --- */
+        /* --- DASHBOARD TABLE CONTAINER (NEW) --- */
         #dashboard-container {
-            /* This is the center column in the new layout */
-            width: 45%; 
-            min-width: 380px; 
+            /* Now holds the table and the chart */
+            width: 50%; 
+            min-width: 550px; 
         }
 
         /* --- DASHBOARD TABLE STYLES --- */
         #dashboard-table {
             width: 100%; /* Take full width of its container */
             border-collapse: collapse;
-            margin: 0 0 20px 0;
+            margin: 0 0 20px 0; /* Add margin below table for chart */
             background-color: white;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
             table-layout: fixed;
         }
         th, td {
-            padding: 10px; /* Reduced padding */
+            padding: 12px;
             text-align: left;
             border-bottom: 1px solid #ddd;
         }
@@ -101,28 +101,27 @@
         }
 
         /* Set specific column widths for DASHBOARD TABLE */
-        #dashboard-table th:nth-child(1), #dashboard-table td:nth-child(1) { width: 45%; } /* Department Name */
-        #dashboard-table th:nth-child(2), #dashboard-table td:nth-child(2) { width: 18%; text-align: right; } /* Sales to Date */
-        #dashboard-table th:nth-child(3), #dashboard-table td:nth-child(3) { width: 18%; text-align: right; } /* Monthly Target */
-        #dashboard-table th:nth-child(4), #dashboard-table td:nth-child(4) { width: 19%; text-align: right; } /* Target Achieved */
+        #dashboard-table th:nth-child(1), #dashboard-table td:nth-child(1) { width: 40%; }
+        #dashboard-table th:nth-child(2), #dashboard-table td:nth-child(2) { width: 20%; text-align: right; }
+        #dashboard-table th:nth-child(3), #dashboard-table td:nth-child(3) { width: 20%; text-align: right; }
+        #dashboard-table th:nth-child(4), #dashboard-table td:nth-child(4) { width: 20%; text-align: right; }
         
         /* --- GENERAL INPUT AND BUTTON STYLES --- */
         input[type="number"] {
-            width: 70px; /* Further reduced input width */
-            padding: 5px 3px;
-            margin: 2px 0;
+            width: 80px; 
+            padding: 5px;
+            margin: 5px 0;
             box-sizing: border-box; 
             text-align: right;
-            font-size: 0.9em;
         }
         
         button {
-            padding: 8px 15px; /* Reduced button padding */
+            padding: 10px 20px;
             background-color: #4CAF50;
             color: white;
             border: none;
             cursor: pointer;
-            margin: 5px 0;
+            margin: 10px 0;
         }
         button:hover {
             background-color: #45a049;
@@ -144,95 +143,63 @@
             text-align: center;
         }
         
-        /* --- EDIT SECTION CONTAINER & FORM STYLES (LEFT COLUMN) --- */
+        /* --- EDIT SECTION CONTAINER & FORM STYLES --- */
         #edit-section {
-            width: 30%; /* Significantly reduced width for input form */
-            min-width: 280px;
+            width: 50%; /* Left side */
+            min-width: 400px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
             background-color: white;
             padding: 15px;
-            margin-top: 0;
         }
         
-        /* --- DATA ENTRY TABLE STYLES --- */
+        /* --- DATA ENTRY TABLE STYLES (NO CHANGE) --- */
         #update-form-table {
             width: 100%;
             border-collapse: collapse;
             margin: 0;
             background-color: white;
-            font-size: 0.9em;
         }
         #update-form-table th {
             background-color: #3f9042;
-            padding: 8px 4px; /* Reduced header padding */
         }
-        #update-form-table td {
-            padding: 4px; /* Reduced cell padding */
+        #update-form-table th, #update-form-table td {
+            padding: 8px;
             border: 1px solid #ccc;
         }
         #update-form-table td:nth-child(2), #update-form-table td:nth-child(3) {
             text-align: right;
-            width: 30%; /* Allocate width to input columns */
         }
         
         #update-button-container {
             width: 100%;
             text-align: center;
-            margin-top: 15px;
+            margin-top: 20px;
         }
 
-        /* --- CHART STYLES (RIGHT COLUMN) --- */
+        /* --- CHART STYLES --- */
         #sales-chart-container {
             width: 100%;
-            max-width: 450px; 
-            margin: 0 auto;
+            max-width: 550px; /* Constrain chart size within the container */
+            margin: 20px auto;
             background-color: white;
             padding: 20px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
 
-        /* --- Responsive Breakpoint (Stacking for smaller screens) --- */
-        @media (max-width: 1300px) {
-            #main-content-container {
-                gap: 10px;
-            }
-        }
+        /* --- Responsive Breakpoint --- */
         @media (max-width: 1100px) {
             #main-content-container {
-                flex-direction: column; /* Stack the elements vertically */
+                flex-direction: column;
                 align-items: center;
             }
-            #edit-section, #dashboard-container {
-                width: 95%; /* Make full width on small screens */
-                min-width: 0;
-            }
             #dashboard-container {
-                display: flex; /* Arrange table and chart side-by-side again for better use of space */
-                flex-direction: row; 
-                gap: 20px;
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-            #dashboard-table, #sales-chart-container {
-                width: 100%; /* Default to full width for stacking */
-                max-width: none;
+                width: 95%; 
             }
             #dashboard-table {
-                 width: 45%; /* Arrange table and chart side-by-side */
-                 min-width: 350px;
+                margin-bottom: 20px;
             }
-            #sales-chart-container {
-                width: 45%; /* Arrange table and chart side-by-side */
-                min-width: 350px;
-            }
-        }
-        @media (max-width: 750px) {
-            #dashboard-container {
-                flex-direction: column; /* Stack table and chart if side-by-side is too narrow */
-            }
-            #dashboard-table, #sales-chart-container {
-                width: 100%; 
-                min-width: 0;
+            #edit-section {
+                width: 95%;
             }
         }
     </style>
@@ -243,7 +210,7 @@
 
         // Firebase configuration
         const firebaseConfig = {
-            apiKey: "AIzaSyBhlPHRHKJQA1GIYDLGCDThpBaqvUdVN-8",
+            apiKey: "AIzaSyBhlPHRHKJqa1giyDLgCDThpBaqvUdVN-8",
             authDomain: "planet-dashboard.firebaseapp.com",
             databaseURL: "https://planet-dashboard-default-rtdb.firebaseio.com",
             projectId: "planet-dashboard",
@@ -301,7 +268,7 @@
             document.getElementById('total-achieved').textContent = totalAchieved;
         }
 
-        // --- CHART FUNCTION ---
+        // --- NEW CHART FUNCTION ---
         function renderPieChart() {
             const salesData = departments.map(dept => Math.round(allDepartmentData[dept]?.sales || 0));
             const ctx = document.getElementById('salesPieChart').getContext('2d');
@@ -343,7 +310,7 @@
                         responsive: true,
                         plugins: {
                             legend: {
-                                position: 'bottom', /* Changed to bottom for better horizontal layout */
+                                position: 'top',
                             },
                             title: {
                                 display: true,
@@ -367,27 +334,32 @@
                     document.getElementById(`${dept}-achieved`).textContent = 'N/A';
                 });
                 updateTotalsRow(); 
-                renderPieChart(); 
+                renderPieChart(); // Still call chart function with zero data
                 return;
             }
 
+            // Using onValue on the root 'departments' node for efficient total data retrieval
             const rootRef = ref(db, 'departments');
             onValue(rootRef, (snapshot) => {
                 const departmentsData = snapshot.val() || {};
                 
+                // Reset/update allDepartmentData and table rows
                 departments.forEach(dept => {
                     const data = departmentsData[dept] || { sales: 0, target: 0 };
                     const sales = data.sales || 0;
                     const target = data.target || 0;
                     const achieved = calculateAchievement(sales, target);
 
+                    // Update the global data store
                     allDepartmentData[dept] = { sales, target };
 
+                    // Update the individual row in the table, rounding sales/target to whole numbers
                     document.getElementById(`${dept}-sales`).textContent = Math.round(sales);
                     document.getElementById(`${dept}-target`).textContent = Math.round(target);
                     document.getElementById(`${dept}-achieved`).textContent = achieved;
                 });
                 
+                // Recalculate and update the totals row and chart once all data is processed
                 updateTotalsRow();
                 renderPieChart();
 
@@ -395,6 +367,7 @@
                 document.getElementById('auth-message').textContent = `Error loading data: ${error.code} - ${error.message}`;
                 console.error(`Error loading data:`, error);
                 
+                // Set fallbacks for all and update totals/chart
                 departments.forEach(dept => {
                     allDepartmentData[dept] = { sales: 0, target: 0 };
                     document.getElementById(`${dept}-sales`).textContent = 0;
@@ -532,9 +505,9 @@
                 <table id="update-form-table">
                     <thead>
                         <tr>
-                            <th>Dept.</th>
-                            <th>Sales</th>
-                            <th>Target</th>
+                            <th>Department</th>
+                            <th>Sales to Date</th>
+                            <th>Monthly Target</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -567,7 +540,7 @@
                 </table>
                 
                 <div id="update-button-container">
-                    <button type="button" onclick="updateData()">Update All</button>
+                    <button type="button" onclick="updateData()">Update All Departments</button>
                 </div>
             </form>
         </div>
