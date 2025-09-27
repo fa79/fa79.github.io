@@ -53,13 +53,26 @@
             text-align: center;
             color: #333;
         }
+
+        /* --- NEW GLOBAL FLEX CONTAINER --- */
+        #main-content-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start; /* Aligns items to the top */
+            gap: 20px;
+            max-width: 1300px; /* Limit overall width */
+            margin: 0 auto; /* Center the container */
+        }
+        
         table {
-            width: 100%;
+            /* Reduced table width to make space for the form */
+            width: 50%; 
+            min-width: 550px; /* Ensure table is still readable */
             border-collapse: collapse;
-            margin: 20px 0;
+            margin: 0; /* Removed margin to fit layout */
             background-color: white;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            table-layout: fixed; /* Added to make width control easier */
+            table-layout: fixed;
         }
         th, td {
             padding: 12px;
@@ -80,7 +93,7 @@
             border-top: 2px solid #333;
         }
 
-        /* --- NEW STYLING FOR ALIGNMENT AND WIDTH --- */
+        /* --- STYLING FOR ALIGNMENT AND WIDTH (UNCHANGED) --- */
         /* Set specific column widths */
         #dashboard-table th:nth-child(1), #dashboard-table td:nth-child(1) { width: 40%; } /* Department Name */
         #dashboard-table th:nth-child(2), #dashboard-table td:nth-child(2) { width: 20%; text-align: right; } /* Sales to Date */
@@ -89,11 +102,11 @@
         
         /* Ensure inputs are right-aligned within their narrow cell space */
         input[type="number"] {
-            width: 80px; /* Reduced width of input fields */
+            width: 80px; 
             padding: 5px;
             margin: 5px 0;
             box-sizing: border-box; 
-            text-align: right; /* Right-align input text */
+            text-align: right;
         }
         
         button {
@@ -110,6 +123,7 @@
         #auth-section {
             text-align: center;
             margin-bottom: 20px;
+            width: 100%; /* Ensure it spans the top */
         }
         #login-form, #logout-btn {
             display: inline-block;
@@ -122,37 +136,64 @@
             text-align: center;
         }
         
-        /* --- FLEXBOX STYLES FOR SIDE-BY-SIDE ENTRY --- */
-        #update-form {
-            display: flex;
-            flex-wrap: wrap; 
-            gap: 15px; 
-            justify-content: center; 
+        /* --- EDIT SECTION CONTAINER & FORM STYLES --- */
+        #edit-section {
+            /* Set form container width to be side-by-side with the table */
+            width: 50%;
+            min-width: 400px;
         }
+        #edit-section h2 {
+            text-align: center;
+        }
+        
+        #update-form {
+            /* New 2-column grid layout for department inputs */
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* Two columns of equal width */
+            gap: 15px; 
+            justify-items: center; /* Center the input blocks within the columns */
+        }
+        
         #update-form label {
             display: inline-block;
             width: 120px;
             font-weight: bold;
         }
         .dept-input-group {
-            margin-bottom: 15px;
+            margin-bottom: 0; /* Removed margin to tighten vertical spacing */
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
             background-color: #f9f9f9;
-            flex: 1 1 300px; 
-            min-width: 250px;
-            max-width: 350px;
+            width: 90%; /* Use most of the column width */
         }
         .dept-input-group h3 {
             margin-top: 0;
             border-bottom: 1px solid #ddd;
             padding-bottom: 5px;
+            font-size: 1.1em;
         }
         #update-button-container {
+            /* Make the button span both columns */
+            grid-column: 1 / span 2; 
             width: 100%;
             text-align: center;
-            margin-top: 20px;
+            margin-top: 5px;
+        }
+
+        /* --- Responsive Breakpoint --- */
+        @media (max-width: 1100px) {
+            #main-content-container {
+                flex-direction: column; /* Stack the table and form vertically */
+                align-items: center;
+            }
+            table {
+                width: 95%; 
+                margin-bottom: 20px;
+            }
+            #edit-section {
+                width: 95%;
+            }
         }
     </style>
     <script type="module">
@@ -399,104 +440,106 @@
         <button id="logout-btn" class="hidden" onclick="logout()">Logout</button>
         <p id="auth-message" class="error"></p>
     </div>
+
+    <div id="main-content-container">
     
-    <table id="dashboard-table">
-        <thead>
-            <tr>
-                <th>Department</th>
-                <th>Sales to Date</th>
-                <th>Monthly Target</th>
-                <th>Monthly Target Achieved</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr id="parts-row">
-                <td>Parts</td>
-                <td id="parts-sales">Loading...</td>
-                <td id="parts-target">Loading...</td>
-                <td id="parts-achieved">Loading...</td>
-            </tr>
-            <tr id="workshop-row">
-                <td>Workshop</td>
-                <td id="workshop-sales">Loading...</td>
-                <td id="workshop-target">Loading...</td>
-                <td id="workshop-achieved">Loading...</td>
-            </tr>
-            <tr id="radiator-row">
-                <td>Radiator</td>
-                <td id="radiator-sales">Loading...</td>
-                <td id="radiator-target">Loading...</td>
-                <td id="radiator-achieved">Loading...</td>
-            </tr>
-            <tr id="rewinding-row">
-                <td>Rewinding</td>
-                <td id="rewinding-sales">Loading...</td>
-                <td id="rewinding-target">Loading...</td>
-                <td id="rewinding-achieved">Loading...</td>
-            </tr>
-            <tr id="fip-row">
-                <td>FIP</td>
-                <td id="fip-sales">Loading...</td>
-                <td id="fip-target">Loading...</td>
-                <td id="fip-achieved">Loading...</td>
-            </tr>
-            <tr id="totals-row" class="total-row">
-                <td>TOTALS</td>
-                <td id="total-sales">N/A</td>
-                <td id="total-target">N/A</td>
-                <td id="total-achieved">N/A</td>
-            </tr>
-        </tbody>
-    </table>
+        <table id="dashboard-table">
+            <thead>
+                <tr>
+                    <th>Department</th>
+                    <th>Sales to Date</th>
+                    <th>Monthly Target</th>
+                    <th>Monthly Target Achieved</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr id="parts-row">
+                    <td>Parts</td>
+                    <td id="parts-sales">Loading...</td>
+                    <td id="parts-target">Loading...</td>
+                    <td id="parts-achieved">Loading...</td>
+                </tr>
+                <tr id="workshop-row">
+                    <td>Workshop</td>
+                    <td id="workshop-sales">Loading...</td>
+                    <td id="workshop-target">Loading...</td>
+                    <td id="workshop-achieved">Loading...</td>
+                </tr>
+                <tr id="radiator-row">
+                    <td>Radiator</td>
+                    <td id="radiator-sales">Loading...</td>
+                    <td id="radiator-target">Loading...</td>
+                    <td id="radiator-achieved">Loading...</td>
+                </tr>
+                <tr id="rewinding-row">
+                    <td>Rewinding</td>
+                    <td id="rewinding-sales">Loading...</td>
+                    <td id="rewinding-target">Loading...</td>
+                    <td id="rewinding-achieved">Loading...</td>
+                </tr>
+                <tr id="fip-row">
+                    <td>FIP</td>
+                    <td id="fip-sales">Loading...</td>
+                    <td id="fip-target">Loading...</td>
+                    <td id="fip-achieved">Loading...</td>
+                </tr>
+                <tr id="totals-row" class="total-row">
+                    <td>TOTALS</td>
+                    <td id="total-sales">N/A</td>
+                    <td id="total-target">N/A</td>
+                    <td id="total-achieved">N/A</td>
+                </tr>
+            </tbody>
+        </table>
 
-    <div id="edit-section" class="hidden">
-        <h2>Update All Department Values (Authorized Users Only)</h2>
-        <form id="update-form">
-            
-            <div class="dept-input-group">
-                <h3>Parts</h3>
-                <label for="parts-sales-input">Sales to Date:</label>
-                <input type="number" id="parts-sales-input" name="parts-sales-input"><br>
-                <label for="parts-target-input">Monthly Target:</label>
-                <input type="number" id="parts-target-input" name="parts-target-input"><br>
-            </div>
+        <div id="edit-section" class="hidden">
+            <h2>Update All Department Values</h2>
+            <form id="update-form">
+                
+                <div class="dept-input-group">
+                    <h3>Parts</h3>
+                    <label for="parts-sales-input">Sales to Date:</label>
+                    <input type="number" id="parts-sales-input" name="parts-sales-input"><br>
+                    <label for="parts-target-input">Monthly Target:</label>
+                    <input type="number" id="parts-target-input" name="parts-target-input"><br>
+                </div>
 
-            <div class="dept-input-group">
-                <h3>Workshop</h3>
-                <label for="workshop-sales-input">Sales to Date:</label>
-                <input type="number" id="workshop-sales-input" name="workshop-sales-input"><br>
-                <label for="workshop-target-input">Monthly Target:</label>
-                <input type="number" id="workshop-target-input" name="workshop-target-input"><br>
-            </div>
+                <div class="dept-input-group">
+                    <h3>Workshop</h3>
+                    <label for="workshop-sales-input">Sales to Date:</label>
+                    <input type="number" id="workshop-sales-input" name="workshop-sales-input"><br>
+                    <label for="workshop-target-input">Monthly Target:</label>
+                    <input type="number" id="workshop-target-input" name="workshop-target-input"><br>
+                </div>
 
-            <div class="dept-input-group">
-                <h3>Radiator</h3>
-                <label for="radiator-sales-input">Sales to Date:</label>
-                <input type="number" id="radiator-sales-input" name="radiator-sales-input"><br>
-                <label for="radiator-target-input">Monthly Target:</label>
-                <input type="number" id="radiator-target-input" name="radiator-target-input"><br>
-            </div>
-            
-            <div class="dept-input-group">
-                <h3>Rewinding</h3>
-                <label for="rewinding-sales-input">Sales to Date:</label>
-                <input type="number" id="rewinding-sales-input" name="rewinding-sales-input"><br>
-                <label for="rewinding-target-input">Monthly Target:</label>
-                <input type="number" id="rewinding-target-input" name="rewinding-target-input"><br>
-            </div>
+                <div class="dept-input-group">
+                    <h3>Radiator</h3>
+                    <label for="radiator-sales-input">Sales to Date:</label>
+                    <input type="number" id="radiator-sales-input" name="radiator-sales-input"><br>
+                    <label for="radiator-target-input">Monthly Target:</label>
+                    <input type="number" id="radiator-target-input" name="radiator-target-input"><br>
+                </div>
+                
+                <div class="dept-input-group">
+                    <h3>Rewinding</h3>
+                    <label for="rewinding-sales-input">Sales to Date:</label>
+                    <input type="number" id="rewinding-sales-input" name="rewinding-sales-input"><br>
+                    <label for="rewinding-target-input">Monthly Target:</label>
+                    <input type="number" id="rewinding-target-input" name="rewinding-target-input"><br>
+                </div>
 
-            <div class="dept-input-group">
-                <h3>FIP</h3>
-                <label for="fip-sales-input">Sales to Date:</label>
-                <input type="number" id="fip-sales-input" name="fip-sales-input"><br>
-                <label for="fip-target-input">Monthly Target:</label>
-                <input type="number" id="fip-target-input" name="fip-target-input"><br>
-            </div>
-            
-            <div id="update-button-container">
-                <button type="button" onclick="updateData()">Update All Departments</button>
-            </div>
-        </form>
-    </div>
-</body>
+                <div class="dept-input-group">
+                    <h3>FIP</h3>
+                    <label for="fip-sales-input">Sales to Date:</label>
+                    <input type="number" id="fip-sales-input" name="fip-sales-input"><br>
+                    <label for="fip-target-input">Monthly Target:</label>
+                    <input type="number" id="fip-target-input" name="fip-target-input"><br>
+                </div>
+                
+                <div id="update-button-container">
+                    <button type="button" onclick="updateData()">Update All Departments</button>
+                </div>
+            </form>
+        </div>
+    </div> </body>
 </html>
